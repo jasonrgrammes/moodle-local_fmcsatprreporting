@@ -1,5 +1,13 @@
 name: Moodle 5.3 compatibility
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    paths: ['local_*.zip', 'lang/**', '.github/workflows/**']
+  pull_request:
+    paths: ['local_*.zip', 'lang/**', '.github/workflows/**']
+  workflow_dispatch:
+concurrency:
+  group: compatibility-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -33,6 +41,8 @@ jobs:
           echo '7c8fa49f32282a38e3f93c780e559671705dbb1907365bc03b61a5e2e4914497  local_govreporting-1.5.0-beta1.zip' | sha256sum -c
           unzip -q local_govreporting-1.5.0-beta1.zip
           mv govreporting plugin
+          cp lang/en/local_govreporting.php plugin/lang/en/local_govreporting.php
+          sed -i "s/2026102700/2026102800/; s/1.5.0-beta1/1.5.0-beta2/" plugin/version.php
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -56,6 +66,18 @@ jobs:
           MOODLE_BRANCH: MOODLE_503_STABLE
       - run: moodle-plugin-ci phplint
       - run: moodle-plugin-ci phpcs --max-warnings 0
-      - run: moodle-plugin-ci validate
-      - run: moodle-plugin-ci mustache
-      - run: moodle-plugin-ci phpunit --fail-on-warning
+      - if: ${{ !cancelled() }}
+        run: moodle-plugin-ci validate
+      - if: ${{ !cancelled() }}
+        run: moodle-plugin-ci mustache
+      - if: ${{ !cancelled() }}
+        run: moodle-plugin-ci phpunit --fail-on-warning
+      - name: Package tested beta2 source
+        run: |
+          cp -aL plugin govreporting
+          zip -qr local_govreporting-1.5.0-beta2.zip govreporting
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fmcsa-tpr-beta2-${{ matrix.database }}
+          path: local_govreporting-1.5.0-beta2.zip
+          retention-days: 30
