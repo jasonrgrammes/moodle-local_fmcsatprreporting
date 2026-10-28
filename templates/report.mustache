@@ -1,0 +1,347 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_govreporting/report
+
+    Government Reporting plugin report page template.
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * data-userid
+
+    Context variables required for this template:
+    * title - The report title
+    * description - The report description
+    * has_students - Whether there are any eligible students
+    * no_students_message - Message to display when there are no eligible students
+    * has_pagination - Whether pagination is needed
+    * pagination - HTML for the pagination bar
+    * total_students - Total number of eligible students
+    * students - Array of student objects
+      * id - Student ID
+      * firstname - Student first name
+      * lastname - Student last name
+      * driver_license - Student driver license number
+      * date_of_birth - Student date of birth
+      * state - Student state
+      * training_completion - Training completion date
+      * theory_score - Average theory score
+      * course_list - Formatted list of courses with scores
+      * submit_button - Text for the submit button
+
+    Example context (json):
+    {
+        "title": "FMCSA TPR Reporting",
+        "description": "Synthetic template preview; no real student data.",
+        "has_students": true,
+        "total_students": 1,
+        "is_submitted_tab": true,
+        "tab_submitted_active": true,
+        "tab_eligible_url": "#",
+        "tab_submitted_url": "#",
+        "students": [
+            {
+                "id": 0,
+                "fullname": "Alex Example",
+                "group_name": "Example Training Group",
+                "theory_score": "85%",
+                "date_of_birth": "Example only",
+                "driver_license": "TEST-ONLY",
+                "state": "US-OH",
+                "can_enter_btw_hours": true,
+                "btw_range_edit_url": "#",
+                "btw_road_edit_url": "#",
+                "course_count": 1,
+                "courses": [
+                    {
+                        "name": "Example theory course",
+                        "score": "85%"
+                    }
+                ],
+                "has_theory_history": true,
+                "submission_history": [
+                    {
+                        "category": "Class A",
+                        "date": "Example completion",
+                        "attempt": 1
+                    }
+                ],
+                "has_btw_training": true,
+                "btw_components": [
+                    {
+                        "label": "BTW Range",
+                        "hours": "12.5",
+                        "status": "Not submitted",
+                        "providername": "Example Training Provider",
+                        "can_review": false
+                    }
+                ]
+            }
+        ]
+    }
+}}
+
+<div class="local-govreporting-report">
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+        <h2 class="mb-0">{{title}}</h2>
+        {{#can_configure}}
+        <a href="{{settings_url}}" class="btn btn-outline-secondary tpr-settings-shortcut" title="{{#str}}text_2b84b5ab7f68, local_govreporting{{/str}}">
+            <i class="fa fa-cog" aria-hidden="true"></i> {{#str}}text_53d2b2b350b1, local_govreporting{{/str}}
+        </a>
+        {{/can_configure}}
+    </div>
+    
+    {{! Tab navigation }}
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link {{#tab_eligible_active}}active{{/tab_eligible_active}}" 
+               href="{{tab_eligible_url}}" 
+               role="tab">
+                {{#str}}tab_eligible, local_govreporting{{/str}}
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{#tab_submitted_active}}active{{/tab_submitted_active}}" 
+               href="{{tab_submitted_url}}" 
+               role="tab">
+                {{#str}}tab_submitted, local_govreporting{{/str}}
+            </a>
+        </li>
+        {{#can_archive}}
+        <li class="nav-item"><a class="nav-link {{#tab_archived_active}}active{{/tab_archived_active}}" href="{{tab_archived_url}}" role="tab">{{#str}}text_cc0a8d8c7eda, local_govreporting{{/str}}</a></li>
+        {{/can_archive}}
+    </ul>
+    
+    <div class="tab-content mt-3">
+        <p>{{description}}</p>
+        
+        {{#has_filters}}
+        <div class="filter-container card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">{{#str}}text_6b9acc705643, local_govreporting{{/str}}</h5>
+                <form id="filter-form" method="get" action="">
+                    <input type="hidden" name="tab" value="{{current_tab}}">
+                    
+                    <input type="hidden" name="firstinitial" value="{{firstinitial}}">
+                    <input type="hidden" name="lastinitial" value="{{lastinitial}}">
+                    {{#initialrows}}
+                    <div class="initialbar {{key}} d-flex flex-wrap justify-content-center justify-content-md-start mb-2">
+                        <span class="initialbarlabel me-2">{{label}}</span>
+                        <nav class="initialbargroups d-flex flex-wrap justify-content-center justify-content-md-start" aria-label="{{label}}">
+                            <ul class="pagination pagination-sm me-2">
+                            {{#all}}
+                                <li class="initialbarall page-item {{#active}}active{{/active}}"><a class="page-link" href="{{url}}" {{#active}}aria-current="true"{{/active}}>{{text}}</a></li>
+                            {{/all}}
+                            </ul>
+                            <ul class="pagination pagination-sm flex-wrap">
+                            {{#letters}}
+                                <li class="page-item {{#active}}active{{/active}}"><a class="page-link" href="{{url}}" {{#active}}aria-current="true"{{/active}}>{{text}}</a></li>
+                            {{/letters}}
+                            </ul>
+                        </nav>
+                    </div>
+                    {{/initialrows}}
+                    <p><a class="btn btn-outline-primary" href="{{training_entry_url}}">{{#str}}text_ab8e089949d1, local_govreporting{{/str}}</a></p>
+                    {{#btw_needs_configuration}}
+                    <div class="alert alert-info">{{#str}}text_17e3954e40f3, local_govreporting{{/str}} <a href="{{btw_settings_url}}">{{#str}}text_e9aa2e1bc708, local_govreporting{{/str}}</a>.</div>
+                    {{/btw_needs_configuration}}
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="filter-bundle">{{#str}}text_7d6b707176ff, local_govreporting{{/str}}</label>
+                                <select id="filter-bundle" name="category" class="form-control">
+                                    <option value="0">{{#str}}text_b49a2fc472b8, local_govreporting{{/str}}</option>
+                                    {{#bundles}}
+                                    <option value="{{id}}" {{#selected}}selected{{/selected}}>{{name}}</option>
+                                    {{/bundles}}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="filter-group">{{#str}}text_ae9629f4ebb8, local_govreporting{{/str}}</label>
+                                <select id="filter-group" name="group" class="form-control">
+                                    <option value="">{{#str}}text_33c7d0a60fd4, local_govreporting{{/str}}</option>
+                                    {{#groups}}
+                                    <option value="{{value}}" {{#selected}}selected{{/selected}}>{{name}}</option>
+                                    {{/groups}}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>{{#str}}text_ab90d23f7402, local_govreporting{{/str}}</label>
+                                <div>
+                                    <button type="submit" class="btn btn-primary">{{#str}}text_aa3dea27391b, local_govreporting{{/str}}</button>
+                                    <a href="?tab={{current_tab}}" class="btn btn-secondary">{{#str}}text_f641dcde74d7, local_govreporting{{/str}}</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {{/has_filters}}
+        
+        <div id="gov-report-notifications" class="notifications">
+            <div id="gov-report-success" class="alert alert-success" role="alert" style="display: none;">
+                <span id="success-message"></span>
+            </div>
+            <div id="gov-report-error" class="alert alert-danger" role="alert" style="display: none;">
+                <span id="error-message"></span>
+            </div>
+        </div>
+
+    {{#has_pagination}}
+        <div class="report-info">
+            <p>{{#str}}showing_students, local_govreporting, {{total_students}}{{/str}}</p>
+        </div>
+    {{/has_pagination}}
+
+    {{#has_students}}
+        <div class="student-list">
+            {{#students}}
+                <details class="student-card student-disclosure{{#group_required}} student-group-required{{/group_required}}" data-userid="{{id}}">
+                    <summary class="student-card-summary"><span class="student-summary-name">{{fullname}}</span><span class="student-summary-group">{{#str}}text_c04773b71e46, local_govreporting{{/str}} {{group_name}}</span></summary>
+                    <div class="card-layout-wrapper">
+                        <div class="card-main-content">
+                            <header class="student-card-header">
+                                {{#can_edit_profile}}<a class="btn btn-outline-secondary btn-sm" href="{{edit_profile_url}}">{{#str}}text_cd280a41f758, local_govreporting{{/str}}</a>{{/can_edit_profile}}
+                            </header>
+                            {{#can_enter_btw_hours}}
+                            <div class="d-flex flex-wrap gap-2 mb-3 btw-hours-shortcuts" aria-label="{{#str}}text_2cba22f5bff8, local_govreporting{{/str}}">
+                                <a class="btn btn-outline-primary btn-sm" href="{{btw_range_edit_url}}">{{#str}}add_range_hours, local_govreporting{{/str}}</a>
+                                <a class="btn btn-outline-primary btn-sm" href="{{btw_road_edit_url}}">{{#str}}add_road_hours, local_govreporting{{/str}}</a>
+                            </div>
+                            {{/can_enter_btw_hours}}
+                            <div class="student-meta">
+                                <span><strong>{{#str}}text_cb3e09f46f59, local_govreporting{{/str}}</strong> {{id}}</span>
+                                <span><strong>{{#str}}text_5e608719ca82, local_govreporting{{/str}}</strong> {{date_of_birth}}</span>
+                                <span><strong>{{#str}}text_de13bf1ab0b4, local_govreporting{{/str}}</strong> {{driver_license}} · {{state}}</span>
+                                <span><strong>{{#str}}text_daf52311e2ae, local_govreporting{{/str}}</strong> {{theory_score}}</span>
+                            </div>
+                            {{#group_required}}<div class="group-required-notice" role="status"><strong>{{#str}}text_3260f2b5cb7c, local_govreporting{{/str}}</strong> {{#str}}text_c4124190ea7a, local_govreporting{{/str}}</div>{{/group_required}}
+
+                            {{#is_submitted_tab}}
+                            {{#has_theory_history}}
+                            <h3 class="courses-title-compact">{{#str}}text_76c6cb643d44, local_govreporting{{/str}}</h3>
+                            <ul>
+                            {{#submission_history}}
+                                <li>{{category}} — {{date}} {{#str}}text_eaf1cccf1257, local_govreporting{{/str}} {{attempt}}</li>
+                            {{/submission_history}}
+                            </ul>
+                            {{/has_theory_history}}
+                            <p class="small text-muted">{{#str}}text_6a73a69feafa, local_govreporting{{/str}}</p>
+                            {{/is_submitted_tab}}
+                            {{#is_archived_tab}}
+                            {{#archive_records}}
+                            <div class="card p-3 my-2">
+                                <strong>{{category}}</strong><span>{{reason}} — {{date}}</span>
+                                <form action="{{archive_action_url}}" method="post" class="mt-2">
+                                    <input type="hidden" name="sesskey" value="{{sesskey}}">
+                                    <input type="hidden" name="action" value="restore">
+                                    <input type="hidden" name="archiveid" value="{{archiveid}}">
+                                    <button type="submit" class="btn btn-outline-primary btn-sm">{{#str}}text_fd1279536604, local_govreporting{{/str}}</button>
+                                </form>
+                            </div>
+                            {{/archive_records}}
+                            {{/is_archived_tab}}
+                            {{#has_btw_training}}
+                            <section class="btw-training-section mb-3" aria-label="{{#str}}text_2721f9009853, local_govreporting{{/str}}">
+                                <h3 class="courses-title-compact">{{#str}}text_2721f9009853, local_govreporting{{/str}}</h3>
+
+                                {{#btw_components}}
+                                <div class="mb-2"><strong>{{label}}:</strong> {{hours}} {{#str}}text_628691455a21, local_govreporting{{/str}} {{status}}<br><span class="small">{{#str}}text_f60f81400684, local_govreporting{{/str}} {{providername}}</span>
+                                    {{#can_review}}<a class="btn btn-outline-primary btn-sm" href="{{review_url}}">{{#str}}text_e29a79fe0c34, local_govreporting{{/str}} {{label}} {{#str}}text_4da0c3de19e7, local_govreporting{{/str}}</a>{{/can_review}}
+                                </div>
+                                {{/btw_components}}
+                                {{#can_enter_btw_hours}}<a href="{{training_edit_url}}">{{#str}}text_44dfb68ef94b, local_govreporting{{/str}}</a>{{/can_enter_btw_hours}}
+                                {{#btw_history}}<div class="small mb-2">{{component}} / {{category}} — {{status}} — {{date}}{{#hours}}<br>{{hours}} {{#str}}text_5aedee0964c6, local_govreporting{{/str}}{{/hours}}{{#completion}} {{#str}}text_af4a14ec4fdb, local_govreporting{{/str}} {{completion}}{{/completion}}</div>{{/btw_history}}
+                            </section>
+                            {{/has_btw_training}}
+                            <!-- Third Line: Courses Table -->
+                            <section class="courses-section-compact">
+                                <h3 class="courses-title-compact">{{#str}}text_2c40d059145b, local_govreporting{{/str}}{{course_count}})</h3>
+                                <div class="courses-table-wrapper">
+                                    <table class="courses-table-clean">
+                                        <thead>
+                                            <tr>
+                                                <th class="course-name-header">{{#str}}text_9ea42a2c2d64, local_govreporting{{/str}}</th>
+                                                <th class="score-header">{{#str}}text_489f4877244a, local_govreporting{{/str}}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {{#courses}}
+                                            <tr>
+                                                <td class="course-name">{{name}}</td>
+                                                <td class="course-score">{{score}}</td>
+                                            </tr>
+                                            {{/courses}}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+                        </div>
+                        
+                        {{#is_eligible_tab}}
+                        <!-- Button on the right side center -->
+                        <div class="card-side-action">
+                            {{#reporting_options}}
+                            <div class="mb-3">
+                            <strong>{{name}} ({{category}})</strong><br>
+                            {{#str}}text_c7ae23e8e1dd, local_govreporting{{/str}} {{score}}%<br>
+                            <button class="submit-btn-side submit-student" data-userid="{{id}}" data-bundleid="{{bundleid}}" {{#group_required}}disabled aria-disabled="true" title="{{#str}}text_8b127c58209e, local_govreporting{{/str}}"{{/group_required}}>
+                                <i class="fa fa-paper-plane"></i>
+                                {{#str}}text_3b3d959125ce, local_govreporting{{/str}}
+                            </button>
+                            {{#can_archive}}
+                            <form action="{{archive_action_url}}" method="post" class="mt-2">
+                                <input type="hidden" name="sesskey" value="{{sesskey}}">
+                                <input type="hidden" name="action" value="archive">
+                                <input type="hidden" name="userid" value="{{id}}">
+                                <input type="hidden" name="categoryid" value="{{bundleid}}">
+                                <label class="small" for="archive-reason-{{id}}-{{bundleid}}">{{#str}}text_e873058109f8, local_govreporting{{/str}}</label>
+                                <select id="archive-reason-{{id}}-{{bundleid}}" name="reason" class="form-control form-control-sm">
+                                    <option value="reported">{{#str}}text_eb66c5130562, local_govreporting{{/str}}</option>
+                                    <option value="dismissed">{{#str}}text_55f2e7d89aa8, local_govreporting{{/str}}</option>
+                                </select>
+                                <button type="submit" class="btn btn-outline-secondary btn-sm mt-2">{{#str}}text_2621c6fd51a5, local_govreporting{{/str}}</button>
+                            </form>
+                            {{/can_archive}}
+                            </div>
+                            {{/reporting_options}}
+                        </div>
+                        {{/is_eligible_tab}}
+                    </div>
+                </details>
+            {{/students}}
+        </div>
+
+        {{#has_pagination}}
+            <div class="pagination-container">
+                {{{pagination}}}
+            </div>
+        {{/has_pagination}}
+    {{/has_students}}
+    
+        {{^has_students}}
+            <div class="alert alert-info">{{no_students_message}}</div>
+        {{/has_students}}
+    </div>
+</div>
