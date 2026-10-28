@@ -1,6 +1,6 @@
 # FMCSA TPR Reporting for Moodle
 
-A Moodle local plugin for managing theory, behind-the-wheel range and public-road training reports to the FMCSA Training Provider Registry.
+A Moodle local plugin for managing, and submitting results for ELDT Theory, Behind-the-Wheel Range and Behind-the-Wheel Road training results for Commercial Driver's License (CDL) driver candidates to the FMCSA's Training Provider Registry.
 
 ## Development status
 
