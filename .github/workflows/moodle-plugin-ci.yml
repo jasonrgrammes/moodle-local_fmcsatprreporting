@@ -1,9 +1,9 @@
 name: Moodle 5.3 compatibility
 on:
   push:
-    paths: ['local_*.zip', 'lang/**', '.github/workflows/**']
+    paths: ['local_*.zip', 'lang/**', 'templates/**', '.github/workflows/**']
   pull_request:
-    paths: ['local_*.zip', 'lang/**', '.github/workflows/**']
+    paths: ['local_*.zip', 'lang/**', 'templates/**', '.github/workflows/**']
   workflow_dispatch:
 concurrency:
   group: compatibility-${{ github.ref }}
@@ -42,6 +42,8 @@ jobs:
           unzip -q local_govreporting-1.5.0-beta1.zip
           mv govreporting plugin
           cp lang/en/local_govreporting.php plugin/lang/en/local_govreporting.php
+          cp templates/report.mustache plugin/templates/report.mustache
+          find plugin -type f -name "*.md" -exec sed -i "s/1.5.0-beta1/1.5.0-beta2/g; s/2026102700/2026102800/g" {} +
           sed -i "s/2026102700/2026102800/; s/1.5.0-beta1/1.5.0-beta2/" plugin/version.php
       - uses: shivammathur/setup-php@v2
         with:
