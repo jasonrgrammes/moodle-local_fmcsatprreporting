@@ -1,0 +1,61 @@
+name: Moodle 5.3 compatibility
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  compatibility:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [pgsql, mariadb]
+    services:
+      postgres:
+        image: ${{ matrix.database == 'pgsql' && 'postgres:17' || '' }}
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
+      mariadb:
+        image: ${{ matrix.database == 'mariadb' && 'mariadb:11' || '' }}
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: '1'
+        ports: ['3306:3306']
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval 10s --health-timeout 5s --health-retries 3
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Extract verified install package
+        run: |
+          echo '7c8fa49f32282a38e3f93c780e559671705dbb1907365bc03b61a5e2e4914497  local_govreporting-1.5.0-beta1.zip' | sha256sum -c
+          unzip -q local_govreporting-1.5.0-beta1.zip
+          mv govreporting plugin
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli, pgsql, intl, soap, zip, gd, sodium
+          ini-values: max_input_vars=5000
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Moodle test tools
+        run: |
+          composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ^4
+          echo "$PWD/ci/bin" >> "$GITHUB_PATH"
+          echo "$PWD/ci/vendor/bin" >> "$GITHUB_PATH"
+          sudo locale-gen en_AU.UTF-8
+          echo "NVM_DIR=$HOME/.nvm" >> "$GITHUB_ENV"
+      - name: Install isolated Moodle
+        run: moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1
+        env:
+          DB: ${{ matrix.database }}
+          MOODLE_BRANCH: MOODLE_503_STABLE
+      - run: moodle-plugin-ci phplint
+      - run: moodle-plugin-ci phpcs --max-warnings 0
+      - run: moodle-plugin-ci validate
+      - run: moodle-plugin-ci mustache
+      - run: moodle-plugin-ci phpunit --fail-on-warning
